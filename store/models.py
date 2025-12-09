@@ -37,3 +37,19 @@ class Product(models.Model):
 #   - on_delete=models.CASCADE:  If category is deleted, all its products are deleted too.
 #   - auto_now_add=True     Auto sets products date when product is created.
 #   - auto_now=True     Updates date whenever product is modified.
+
+
+variation_category_choices = (
+    ('color', 'color'),
+    ('size', 'size'),
+)
+class Variation(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    variation_category = models.CharField(max_length=255, choices=variation_category_choices)
+    variation_value = models.CharField(max_length=255)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    
+    def __unicode__(self):
+        return f"{self.product.product_name} - {self.variation_value}"
