@@ -3,6 +3,7 @@ from .models import Cart, CartItem
 from .views import _cart_id
 
 
+##  - Make a cart_counter context_processor to show the shopping cart count value in the project.
 def cart_counter(request):
     """
     This function runs on EVERY page request
