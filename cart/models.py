@@ -17,10 +17,14 @@ class CartItem(models.Model):
     quantity    = models.IntegerField()
     is_active = models.BooleanField(default=True)
     
-    def sub_total(self):
+    def sub_total(self): ## - Custom method to calculate item cost (price * quantity)
         return self.product.price * self.quantity
     
     def __str__(self):
         return self.product
     
+##  - ✅ - Model Fields Explaination:
+#   - product:  Which 'Product' is in the 'CartItem' Model.
+#   - cart:     Which 'Cart' this 'CartItem' belong to.
+##  - Relationship: Cart(1) ----> (Many) CartItem (Many) ----> (1) Product
     
