@@ -34,16 +34,20 @@
                     data-toggle="buttons"
                   >
                     <!-- TODO: Check why this not working, Product model with variation -->
-                    {% for i in single_product.variation_set.all %}
+                    {% if colors %} {% for color in colors %}
                     <label class="btn btn-light">
                       <input
                         type="radio"
                         name="color"
-                        value="{{ i.variation_value }}"
+                        value="{{ color.variation_value }}"
                       />
-                      {{ i.variation_value }}
+                      {{ color.variation_value }}
                     </label>
-                    {% endfor %}
+                    {% endfor %} {% else %}
+                    <p class="w-100 text-center text-danger">
+                      Color Not found for this product.
+                    </p>
+                    {% endif %}
                   </div>
                 </div>
               </div>
@@ -55,18 +59,20 @@
                     class="btn-group btn-group-sm btn-group-toggle"
                     data-toggle="buttons"
                   >
+                    {% if sizes %} {% for size in sizes %}
                     <label class="btn btn-light">
-                      <input type="radio" name="size" value="small" /> S
+                      <input
+                        type="radio"
+                        name="size"
+                        value="{{ size.variation_value }}"
+                      />
+                      {{ size.variation_value }}
                     </label>
-                    <label class="btn btn-light active">
-                      <input type="radio" name="size" value="medium" /> M
-                    </label>
-                    <label class="btn btn-light">
-                      <input type="radio" name="size" value="large" /> L
-                    </label>
-                    <label class="btn btn-light">
-                      <input type="radio" name="size" value="x-large" /> XL
-                    </label>
+                    {% endfor %} {% else %}
+                    <p class="w-100 text-center text-danger">
+                      Sizes Not found for this product.
+                    </p>
+                    {% endif %}
                   </div>
                 </div>
               </div>
