@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
 
-from store.models import Product
+from store.models import Product, Variation
 from .models import Cart, CartItem
 
 
@@ -29,35 +29,51 @@ def _cart_id(request):
 #       - Each visitor get a unique session ID stored in a cookie.
 
 
+
+##  - 2) Instead of using get request in ADD_TO_CART use post request send data into form.
 def add_cart(request, product_id):
-    color = request.GET.get("color")
-    size = request.GET.get("size")
+    ##  - Get the product from database.
+    try:
+        product = Product.objects.get(id=product_id)
+        product_variations = []
+    except Product.DoesNotExist:
+        return redirect("shop")
+        
+    if request.method == 'POST': 
+        for item in request.POST:
+            key = item
+            value = request.POST[key]
+            # Now check that these key and values matches the db variations.
+            try:
+                variation = Variation.objects.get(product=product, variation_category__iexact=key, variation_value__iexact=value)
+                product_variations.append(variation)
+            except:
+                pass
+            
+    ##  - Get cart if cart exists in database with same session id that make requests.
+    #   - else create a cart with unique car_id (cari_id=request.session.session_key)
+    try:
+        cart = Cart.objects.get(cart_id=_cart_id(request))
+    except Cart.DoesNotExist:
+        cart = Cart.objects.create(cart_id=_cart_id(request))
+    cart.save()
 
-    if color and size:
-        return HttpResponse(color + " " + size)
-    else:
-        ##  - Get the product from database.
-        try:
-            product = Product.objects.get(id=product_id)
-        except Product.DoesNotExist:
-            return redirect("shop")
-
-        ##  - Get cart if cart exists in database with same session id that make requests.
-        #   - else create a cart with unique car_id (cari_id=request.session.session_key)
-        try:
-            cart = Cart.objects.get(cart_id=_cart_id(request))
-        except Cart.DoesNotExist:
-            cart = Cart.objects.create(cart_id=_cart_id(request))
-        cart.save()
-
-        ## Get or create CartItem from database.
-        try:
-            cart_item = CartItem.objects.get(product=product, cart=cart)
-            cart_item.quantity += 1
-            cart_item.save()
-        except CartItem.DoesNotExist:
-            cart_item = CartItem.objects.create(product=product, cart=cart, quantity=1)
-            cart_item.save()
+    ## Get or create CartItem from database.
+    try:
+        cart_item = CartItem.objects.get(product=product, cart=cart)
+        if len(product_variations) > 0: ##  - Check the len of prod_variations.
+            cart_item.variations.clear()
+            for item in product_variations:
+                cart_item.variations.add(item)
+        cart_item.quantity += 1
+        cart_item.save()
+    except CartItem.DoesNotExist:
+        cart_item = CartItem.objects.create(product=product, cart=cart, quantity=1)
+        if len(product_variations) > 0:
+            cart_item.variations.clear()
+            for item in product_variations:
+                cart_item.variations.add(item)
+        cart_item.save()
 
     return redirect("cart")
 
@@ -114,6 +130,8 @@ def cart(request, total=0, quantity=0, cart_items=None):
     except ObjectDoesNotExist:
         cart_items = []
         pass  ## Just Ignore
+    
+    print("=========== Cart Item ============", cart_items)
 
     context = {
         "total": total,

@@ -47,12 +47,18 @@ def product_details(request, category_slug, product_slug):
             cart__cart_id=_cart_id(request), product=single_product
         ).exists()
 
-        colors = single_product.variation_set.filter(
-            variation_category="color", is_active=True
-        )
-        sizes = single_product.variation_set.filter(
-            variation_category="size", is_active=True
-        )
+        # colors = single_product.variation_set.filter(
+        #     variation_category="color", is_active=True
+        # )
+        # sizes = single_product.variation_set.filter(
+        #     variation_category="size", is_active=True
+        # )
+        
+        ##  - We use variations manager for colors and sizes, so instead of getting them manually
+        #   we can get directly. i.e,
+        colors = single_product.variation_set.colors
+        sizes = single_product.variation_set.sizes
+        
 
         print("--------------------------------------- COLOR:", colors)
         print("--------------------------------------- SIZES:", sizes)
