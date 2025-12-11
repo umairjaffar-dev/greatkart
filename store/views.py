@@ -2,7 +2,7 @@ from django.db.models import Q
 from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 
-from .models import Product, variation_category_choices
+from .models import Product, Variation
 from category.models import Category
 
 from cart.models import CartItem
@@ -53,15 +53,28 @@ def product_details(request, category_slug, product_slug):
             cart__cart_id=_cart_id(request), product=single_product
         ).exists()
 
-        ##  - ⭐ variation_set: Reverse ForeignKey Relationship
-        #   - We give 'related_name' prop to 'product' field in 'Variation' model, so instead of 'variation_set' we use just 'variations'
-        colors = single_product.variations.filter(
-            variation_category="color", is_active=True
-        )
+        # ### - Sol 1) Filter by product (Good)
+        # ##  - variation_set: Reverse ForeignKey Relationship
+        # #   - We give 'related_name' prop to 'product' field in 'Variation' model, so instead of 'variation_set' we use just 'variations'
+        # colors = single_product.variations.filter(
+        #     variation_category="color", is_active=True
+        # )
 
-        sizes = single_product.variations.filter(
-            variation_category="size", is_active=True
-        )
+        # sizes = single_product.variations.filter(
+        #     variation_category="size", is_active=True
+        # )
+
+        # ### - Sol 2) Use manager with filter (Good)
+        # ##  - This will little a bit Slow the app due to multiple queries to database.
+        # ##  - We use variations manager for colors and sizes, so instead of getting them manually
+        # #   we can get directly. i.e,
+        # colors = Variation.objects.colors().filter(product=single_product)
+        # sizes = Variation.objects.sizes().filter(product=single_product)
+
+        ##  - Sol 3) Single Query (Best! ⭐)
+        all_variations = single_product.variations.filter(is_active=True)
+        colors = [v for v in all_variations if v.variation_category == "color"]
+        sizes = [v for v in all_variations if v.variation_category == "size"]
 
     except Exception as e:
         raise e

@@ -33,12 +33,24 @@
                       <img src="{{ item.product.images.url }}" class="img-sm" />
                     </div>
                     <figcaption class="info">
-                      <a href="{{ item.product.get_url }}" class="title text-dark"
+                      <a
+                        href="{{ item.product.get_url }}"
+                        class="title text-dark"
                         >{{ item.product.product_name }}</a
                       >
                       <p class="text-muted small">
-                        color: 25 Mpx <br />
-                        size: Canon
+                        {% if item.variations.all %}
+                        <!--  -->
+                        {% for item in item.variations.all %}
+                        <!--  -->
+                        <span>
+                          {{ item.variation_category | capfirst }} :
+                          {{item.variation_value | capfirst }}
+                        </span>
+                        <br />
+                        {% endfor %}
+                        <!--  -->
+                        {% endif %}
                       </p>
                     </figcaption>
                   </figure>
