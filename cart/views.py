@@ -29,7 +29,6 @@ def _cart_id(request):
 #       - Each visitor get a unique session ID stored in a cookie.
 
 
-
 ##  - 2) Instead of using get request in ADD_TO_CART use post request send data into form.
 def add_cart(request, product_id):
     ##  - Get the product from database.
@@ -38,18 +37,22 @@ def add_cart(request, product_id):
         product_variations = []
     except Product.DoesNotExist:
         return redirect("shop")
-        
-    if request.method == 'POST': 
+
+    if request.method == "POST":
         for item in request.POST:
             key = item
             value = request.POST[key]
             # Now check that these key and values matches the db variations.
             try:
-                variation = Variation.objects.get(product=product, variation_category__iexact=key, variation_value__iexact=value)
+                variation = Variation.objects.get(
+                    product=product,
+                    variation_category__iexact=key,
+                    variation_value__iexact=value,
+                )
                 product_variations.append(variation)
             except:
                 pass
-            
+
     ##  - Get cart if cart exists in database with same session id that make requests.
     #   - else create a cart with unique car_id (cari_id=request.session.session_key)
     try:
@@ -61,7 +64,7 @@ def add_cart(request, product_id):
     ## Get or create CartItem from database.
     try:
         cart_item = CartItem.objects.get(product=product, cart=cart)
-        if len(product_variations) > 0: ##  - Check the len of prod_variations.
+        if len(product_variations) > 0:  ##  - Check the len of prod_variations.
             cart_item.variations.clear()
             for item in product_variations:
                 cart_item.variations.add(item)
@@ -130,8 +133,8 @@ def cart(request, total=0, quantity=0, cart_items=None):
     except ObjectDoesNotExist:
         cart_items = []
         pass  ## Just Ignore
-    
-    print("=========== Cart Item ============", cart_items)
+
+    # print("=========== Cart Item ============", cart_items)
 
     context = {
         "total": total,

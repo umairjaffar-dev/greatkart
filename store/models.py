@@ -48,12 +48,18 @@ class VariationManager(models.Manager):
         return super(VariationManager, self).filter(variation_category='size', is_active=True)
 
 variation_category_choices = (
-    ('color', 'color'),
-    ('size', 'size'),
+    ("color", "color"),
+    ("size", "size"),
 )
+
+
 class Variation(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    variation_category = models.CharField(max_length=255, choices=variation_category_choices)
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name="variations"
+    )
+    variation_category = models.CharField(
+        max_length=255, choices=variation_category_choices
+    )
     variation_value = models.CharField(max_length=255)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -62,3 +68,7 @@ class Variation(models.Model):
     
     def __str__(self):
         return self.variation_value
+
+
+##  - Variation in Django:
+##  
