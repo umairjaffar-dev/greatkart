@@ -16,9 +16,13 @@ def cart_counter(request):
     try:
         # Get current user's cart using session ID
         cart = Cart.objects.get(cart_id=_cart_id(request))
+        
+        if request.user.is_authenticated:
+            cart_items = CartItem.objects.filter(user=request.user, is_active=True)
+        else:
+            cart_items = CartItem.objects.filter(cart=cart, is_active=True)
 
         # Count all active items in cart
-        cart_items = CartItem.objects.filter(cart=cart, is_active=True)
         cart_items_count = cart_items.count()
 
     except Cart.DoesNotExist:
