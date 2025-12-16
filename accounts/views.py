@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required
 # Import Varification links
 from django.contrib.sites.shortcuts import get_current_site
 from django.template.loader import render_to_string
+from django.urls import reverse
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 from django.contrib.auth.tokens import default_token_generator
@@ -18,55 +19,105 @@ from cart.models import Cart, CartItem
 from cart.views import _cart_id
 
 
-# Create your views here.
+# -----------------------------------------------------------------------------------------------------#
+# ---------------------------------------- Register Request View ---------------------------------------- #
+# -----------------------------------------------------------------------------------------------------#
 def register(request):
+    """Handles user registration with email verification."""
+
     if request.method == "POST":
-        form = RegistrationForm(request.POST)
+        return _handle_registration_post(request)
 
-        if form.is_valid():
-            first_name = form.cleaned_data["first_name"]
-            last_name = form.cleaned_data["last_name"]
-            email = form.cleaned_data["email"]
-            phone_number = form.cleaned_data["phone_number"]
-            password = form.cleaned_data["password"]
-
-            username = f"{first_name} {last_name}"
-            user = Account.objects.create(
-                first_name=first_name,
-                last_name=last_name,
-                username=username,
-                email=email,
-            )
-            user.set_password(password)
-            user.phone_number = phone_number
-            user.save()
-
-            # USER ACTIVATION...
-            current_site = get_current_site(request)
-            mail_subject = "Please activate your account!"
-            message = render_to_string(
-                "auth/auth_varification_email.html",
-                {
-                    "user": user,
-                    "domain": current_site,
-                    "uid": urlsafe_base64_encode(force_bytes(user.pk)),
-                    "token": default_token_generator.make_token(user),
-                },
-            )
-            to_email = email
-            send_email = EmailMessage(mail_subject, message, to=[to_email])
-            send_email.send()
-
-            # messages.success(request, 'Thank you for registering with us. We have sent you a verification email to your email address [rathan.kumar@gmail.com]. Please verify it.')
-            return redirect("/auth/login/?command=verification&email=" + email)
-    else:
-        form = RegistrationForm()
-
+    form = RegistrationForm()
     context = {"form": form}
-
     return render(request, "auth/register.html", context)
 
 
+def _handle_registration_post(request):
+    """Process POST request for user registration."""
+
+    form = RegistrationForm(
+        request.POST
+    )  ## Create a form instance with submitted data and validates it.
+
+    if not form.is_valid():
+        return render(request, "auth/register.html", {"form": form})
+
+    try:
+        user = _create_user(form.cleaned_data)
+        _send_verification_email(
+            request,
+            user,
+            "Please activate your account!",
+            "auth/auth_varification_email.html",
+        )
+
+        ##  - Uncomment this message if you want to show success message.
+        # messages.success(request, 'Thank you for registering with us. We have sent you a verification email to your email address [rathan.kumar@gmail.com]. Please verify it.')
+
+        return _redirect_to_login(user.email)
+    except Exception as e:
+        messages.error(
+            request, "An error occured during registration. Please try again."
+        )
+        return render(request, "auth/register.html", {"form": form})
+
+
+def _create_user(cleaned_data):
+    ##  Extracting form data: Retrieves validated and cleaned data from the form.
+    first_name = cleaned_data["first_name"]
+    last_name = cleaned_data["last_name"]
+    email = cleaned_data["email"]
+    phone_number = cleaned_data["phone_number"]
+    password = cleaned_data["password"]
+
+    ##  Create a user account.
+    username = f"{first_name} {last_name}"
+    user = Account.objects.create_user(
+        first_name=first_name,
+        last_name=last_name,
+        username=username,
+        email=email,
+        password=password,
+    )
+    # user.set_password(password) ## It is needed when creating the user with create method.
+    user.phone_number = phone_number
+    user.save()
+
+    return user
+
+
+def _send_verification_email(request, user, subject_title, template_name):
+    ##  Email Activation setup:
+    ##  - Prepare activation email with encoded user ID and token for security.
+    current_site = get_current_site(request)
+    context = {
+        "user": user,
+        "domain": current_site.domain,
+        "uid": urlsafe_base64_encode(force_bytes(user.pk)),
+        "token": default_token_generator.make_token(user),
+    }
+
+    mail_subject = subject_title
+    message = render_to_string(
+        template_name,
+        context,
+    )
+
+    ##  Send Email And Redirect:
+    send_email = EmailMessage(mail_subject, message, to=[user.email])
+    send_email.send()
+
+
+def _redirect_to_login(email):
+
+    login_url = reverse("login")
+    return redirect(f"{login_url}?command=verification&email={email}")
+
+
+# -----------------------------------------------------------------------------------------------------#
+# ---------------------------------------- Login Request View ---------------------------------------- #
+# -----------------------------------------------------------------------------------------------------#
 def login(request):
     ## ⭐ POST Request Handling:    - Check the user submit the form
     if request.method == "POST":
@@ -134,20 +185,26 @@ def forgotPassword(request):
             user = Account.objects.get(email__exact=email)
 
             # USER ACTIVATION...
-            current_site = get_current_site(request)
-            mail_subject = "Reset your password!"
-            message = render_to_string(
+            _send_verification_email(
+                request,
+                user,
+                "Reset your password!",
                 "auth/reset_password_email.html",
-                {
-                    "user": user,
-                    "domain": current_site,
-                    "uid": urlsafe_base64_encode(force_bytes(user.pk)),
-                    "token": default_token_generator.make_token(user),
-                },
             )
-            to_email = email
-            send_email = EmailMessage(mail_subject, message, to=[to_email])
-            send_email.send()
+            # current_site = get_current_site(request)
+            # mail_subject = "Reset your password!"
+            # message = render_to_string(
+            #     "auth/reset_password_email.html",
+            #     {
+            #         "user": user,
+            #         "domain": current_site.domain,
+            #         "uid": urlsafe_base64_encode(force_bytes(user.pk)),
+            #         "token": default_token_generator.make_token(user),
+            #     },
+            # )
+            # to_email = email
+            # send_email = EmailMessage(mail_subject, message, to=[to_email])
+            # send_email.send()
 
             messages.success(
                 request, "Password reset email has been sent to your email address."
